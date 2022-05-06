@@ -1,33 +1,58 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useEffect, useLayoutEffect } from "react";
+import { View, Text, StyleSheet, ViewStyle, ViewProps } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { FontAwesome } from "@expo/vector-icons";
-import * as Animatable from "react-native-animatable";
+import Animated, {
+  BounceIn,
+  BounceInDown,
+  BounceOut,
+  BounceOutUp,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  FadeOutUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  ZoomIn,
+} from "react-native-reanimated";
+// import { FontAwesome } from "@expo/vector-icons";
 
 export const Error = ({
   errorMsg,
-}: // showError,
-{
+  style,
+  showError,
+}: {
   errorMsg: string;
-  // showError: boolean;
+  style?: ViewStyle;
+  showError?: boolean;
 }) => {
+  const animation = useSharedValue(0);
+  const animatedStyles = useAnimatedStyle(() => {
+    return {
+      opacity: animation.value,
+      display: animation.value ? "flex" : "none",
+    };
+  });
+
+  useEffect(() => {
+    if (showError) {
+      animation.value = withTiming(1, { duration: 500 });
+    } else {
+      animation.value = 0;
+    }
+  }, [showError]);
+
   return (
-    <>
-      <Animatable.View
-        style={styles.error}
-        animation="fadeIn"
-        duration={1000}
-        easing="ease"
-      >
-        <MaterialIcons
-          name="error-outline"
-          size={24}
-          style={{ textAlignVertical: "center" }}
-          color="red"
-        />
-        <Animatable.Text style={styles.errorText}>{errorMsg}</Animatable.Text>
-      </Animatable.View>
-    </>
+    <Animated.View style={[styles.error, animatedStyles]}>
+      <MaterialIcons
+        name="error-outline"
+        size={24}
+        style={{ textAlignVertical: "center" }}
+        color="red"
+      />
+      <Text style={styles.errorText}>{errorMsg}</Text>
+    </Animated.View>
   );
 };
 

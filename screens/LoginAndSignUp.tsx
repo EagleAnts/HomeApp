@@ -1,8 +1,5 @@
-import React, { useRef, useState } from "react";
-import GlobalStyles from "./GlobalStyles";
-import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  // Dimensions,
   Platform,
   StyleSheet,
   ScrollView,
@@ -11,176 +8,228 @@ import {
   ImageBackground,
   useWindowDimensions,
   TouchableOpacity,
-  SafeAreaView,
+  Keyboard,
+  ActivityIndicator,
 } from "react-native";
-import * as Animatable from "react-native-animatable";
-import {
-  // Control,
-  // Controller,
-  // FieldValues,
-  FormProvider,
-  useForm,
-  // useFormContext,
-} from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { Input } from "../components/StyledInputs";
 import { onSubmit } from "../utils/submitForm";
 
 import { DevTool } from "@hookform/devtools";
-// const deviceHeight = Dimensions.get("screen").height;
-// const deviceWidth = Dimensions.get("screen").width;
+import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
+import { RootState } from "../store";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+
+const webApp = Platform.select({ web: true, default: false });
 
 const loginBg =
   Platform.OS in ["web", "macos", "windows"]
     ? require("../assets/loginBg.png")
     : require("../assets/loginBgPhone.png");
 
-const SignUpPage = () => {
+const LoginAndSignUpPage = () => {
+  console.log("Login Rendered");
+
+  const { height, width } = useWindowDimensions();
+  const dispatch = useAppDispatch();
+  const methods = useForm();
+  const [signUp, setsignUp] = useState(false);
+  const loading = useAppSelector((state) => state.loadingStatus.loading);
+
+  const lastNameRef = useRef<HTMLInputElement | null>(null);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const passwordRef = useRef<HTMLInputElement | null>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement | null>(null);
+
+  const handleOnPress = () => {
+    scale.value = withSequence(withSpring(0.8), withSpring(1));
+
+    setsignUp(!signUp);
+  };
+
+  const scale = useSharedValue(1);
+  const animatedStyles = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+    };
+  });
+
+  const submitForm = methods.handleSubmit((data) => {
+    console.log("Submitting");
+    Keyboard.dismiss();
+    onSubmit({
+      type: !signUp ? "login" : "signup",
+      dispatch,
+      data,
+    });
+  });
+
   return (
     <>
-      <Input
-        label="First Name"
-        rules={{ required: "Your First Name is Required" }}
-        placeholder={Placeholder.FirstName}
-      />
-      <Input
-        label="Last Name"
-        rules={{ required: "Your Last Name is Required" }}
-        placeholder={Placeholder.LastName}
-      />
-    </>
-  );
-};
-
-const LoginAndSignUpPage = () => {
-  const { height, width } = useWindowDimensions();
-
-  const methods = useForm({ mode: "onChange" });
-  const [signUp, setsignUp] = useState(false);
-
-  const formRef = useRef<Animatable.View & View>(null);
-
-  return (
-    <SafeAreaView style={GlobalStyles.droidSafeArea}>
-      <StatusBar style="dark" />
       <ImageBackground
         source={loginBg}
         resizeMode="cover"
-        style={styles.backgroudImage}
+        style={[
+          styles.backgroudImage,
+          {
+            height,
+            width,
+          },
+        ]}
+      />
+      <ScrollView
+        contentContainerStyle={{
+          height,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+        removeClippedSubviews
+        keyboardShouldPersistTaps="always"
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          style={{ height: "100%", width: "100%" }}
-          // behavior="padding"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+        <Animated.View
+          style={[
+            styles.body,
+            {
+              width: width > 500 ? 400 : 0.8 * width,
+            },
+            animatedStyles,
+          ]}
         >
-          <View style={[styles.body, { height }]}>
-            <Animatable.View
-              ref={formRef}
-              style={[
-                styles.body,
-                {
-                  width: width > 500 ? 400 : 0.8 * width,
-                },
-              ]}
-            >
-              <View style={styles.formHeader}>
-                <Text style={styles.baseText}>
-                  {signUp ? "SignUp" : "Login"}
-                </Text>
-              </View>
-              <FormProvider {...methods}>
-                {signUp ? <SignUpPage /> : null}
-                <Input
-                  rules={{
-                    required: "Email is Required",
-                    pattern: {
-                      value: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-                      message: "Invalid Email Address",
-                    },
-                  }}
-                  label="Email"
-                  placeholder={Placeholder.Email}
-                />
-                <Input
-                  label="Password"
-                  rules={{
-                    required: "Password is Required",
-                    pattern: {
-                      value:
-                        /^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$/,
-                      message:
-                        "Password must contain One Lowercase, Uppercase and a Special Character",
-                    },
-                  }}
-                  placeholder={Placeholder.Password}
-                />
-                {signUp ? (
-                  <Input
-                    label="Confirm Password"
-                    placeholder={Placeholder.ConfirmPassword}
-                    rules={{
-                      required: "Password is Required",
-                      validate: (value: {}) =>
-                        value === methods.getValues("Password") ||
-                        "Password Didn't Matched",
-                    }}
-                  />
-                ) : null}
-              </FormProvider>
-              <Animatable.View style={{ alignItems: "flex-end" }}>
-                <TouchableOpacity
-                  activeOpacity={1}
-                  onPress={() => {
-                    // formRef.current.fadeIn(800);
-                    setsignUp(!signUp);
-                  }}
-                >
-                  <Text
-                    style={{
-                      width: "100%",
-                      color: "hsl(0,0%,40%)",
-                      fontWeight: "bold",
-                      margin: 10,
-                      fontSize: 15,
-                      textDecorationLine: "underline",
-                    }}
-                  >
-                    {!signUp ? "New User? Signup" : "Already a User? Login"}
-                  </Text>
-                </TouchableOpacity>
-              </Animatable.View>
-              <View>
-                <TouchableOpacity
-                  onPress={methods.handleSubmit((data) =>
-                    onSubmit({
-                      type: !signUp ? "Login" : "Signup",
-                      data,
-                    })
-                  )}
-                  style={styles.submitButton}
-                >
-                  <Text style={{ color: "white" }}>Submit</Text>
-                </TouchableOpacity>
-              </View>
-            </Animatable.View>
+          <View style={styles.formHeader}>
+            <Text style={styles.baseText}>{signUp ? "SignUp" : "Login"}</Text>
           </View>
-          {Platform.OS === "web" ? <DevTool control={methods.control} /> : null}
-        </ScrollView>
-      </ImageBackground>
-    </SafeAreaView>
+          <FormProvider {...methods}>
+            {signUp ? (
+              <>
+                <Input
+                  name="firstName"
+                  label="First Name"
+                  rules={{ required: "Your First Name is Required" }}
+                  placeholder={Placeholder.FirstName}
+                  returnKeyType="next"
+                  onSubmitEditing={() => lastNameRef.current?.focus()}
+                />
+                <Input
+                  name="lastName"
+                  label="Last Name"
+                  ref={lastNameRef}
+                  rules={{ required: "Your Last Name is Required" }}
+                  placeholder={Placeholder.LastName}
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                />
+              </>
+            ) : null}
+            <Input
+              rules={{
+                required: "Email is Required",
+                pattern: {
+                  value: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+                  message: "Invalid Email Address",
+                },
+              }}
+              label="Email"
+              name="email"
+              placeholder={Placeholder.Email}
+              returnKeyType="next"
+              ref={emailRef}
+              onSubmitEditing={() => passwordRef.current?.focus()}
+            />
+            <Input
+              label="Password"
+              name="password"
+              isPasswordField={true}
+              ref={passwordRef}
+              rules={{
+                required: "Password is Required",
+                minLength: {
+                  value: 8,
+                  message: "Password length must be atleast 8 characters",
+                },
+                maxLength: {
+                  value: 15,
+                  message: "Password length must not exceed 15 characters",
+                },
+              }}
+              placeholder={Placeholder.Password}
+              onSubmitEditing={() => {
+                if (signUp) confirmPasswordRef.current?.focus();
+                else submitForm();
+              }}
+            />
+            {signUp ? (
+              <Input
+                ref={confirmPasswordRef}
+                name="confirmPassword"
+                label="Confirm Password"
+                isPasswordField={true}
+                placeholder={Placeholder.ConfirmPassword}
+                rules={{
+                  required: "Password is Required",
+                  validate: (value: {}) =>
+                    value === methods.getValues("password") ||
+                    "Password Didn't Matched",
+                }}
+                onSubmitEditing={submitForm}
+              />
+            ) : null}
+          </FormProvider>
+          <View style={{ alignItems: "flex-end" }}>
+            <TouchableOpacity activeOpacity={1} onPress={handleOnPress}>
+              <Text
+                style={{
+                  width: "100%",
+                  color: "hsl(0,0%,40%)",
+                  fontWeight: "bold",
+                  marginVertical: 10,
+                  fontSize: 15,
+                  textDecorationLine: "underline",
+                }}
+              >
+                {!signUp ? "New User? Signup" : "Already a User? Login"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View>
+            <TouchableOpacity
+              disabled={loading}
+              onPress={submitForm}
+              style={styles.submitButton}
+            >
+              {loading ? (
+                <ActivityIndicator size={24} color="white" />
+              ) : (
+                <Text style={{ color: "white" }}>Submit</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+
+        {webApp ? <DevTool control={methods.control} /> : null}
+        {/* </ImageBackground> */}
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   body: {
+    height: 800,
     justifyContent: "center",
     alignSelf: "center",
     backgroundColor: "transparent",
+    margin: 5,
   },
   backgroudImage: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    height: "100%",
-    width: "100%",
   },
   row: {
     marginHorizontal: 10,
@@ -228,7 +277,6 @@ const styles = StyleSheet.create({
 
 enum Placeholder {
   FirstName = "Your First Name",
-  MiddleName = "Your Middle Name",
   LastName = "Your Last Name",
   Email = "someone@example.com",
   Password = "Enter your password",
