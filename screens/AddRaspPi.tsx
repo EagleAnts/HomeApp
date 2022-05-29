@@ -29,21 +29,22 @@ import { useAppDispatch } from "../hooks/reduxHooks";
 import { CredentialsPopUp } from "../components/CredentialsPopup";
 import { connectToPi } from "../utils/clientRaspiConnHandler";
 import { LottieLoading } from "../components/Loading";
-import { ApiSocket, RaspiSocket } from "../utils/socketHandler";
+import { ApiSocket, RaspiSocket } from "../utils/clientSocketProvider";
 import { Socket } from "socket.io-client";
 
 const serverAddress = `http://${Constants.manifest?.extra?.serverUrl}:5000`;
+// const serverAddress = `${Constants.manifest?.extra?.serverAddress}`;
 
 let RaspiClient: Socket | null = null;
 
 enum Placeholder {
-  rpiname = "E.g. raspi1",
+  piName = "E.g. raspi1",
   username = "E.g. rpiadmin",
   password = "password",
 }
 
 type PiDetails = {
-  rpiName: string | null;
+  piName: string | null;
   rpipassword: string | null;
   rpiusername: string | null;
 };
@@ -58,7 +59,7 @@ const SetupModal = ({}: // setVisible,
 
   const [ipAddr, setipAddr] = useState("http://192.168.0.118:8000");
   const [piDetails, setPiDetails] = useState<PiDetails>({
-    rpiName: null,
+    piName: null,
     rpipassword: null,
     rpiusername: null,
   });
@@ -190,9 +191,9 @@ const SetupModal = ({}: // setVisible,
               rules={{
                 required: "Please fill out this field!",
               }}
-              name="rpiname"
+              name="piName"
               label="Enter any name for Raspberry Pi"
-              placeholder={Placeholder.rpiname}
+              placeholder={Placeholder.piName}
             />
             <Input
               autoCapitalize="none"
@@ -246,11 +247,27 @@ const SetupModal = ({}: // setVisible,
   );
 };
 const AddModal = ({ setVisible }: { setVisible?: (arg: boolean) => void }) => {
+  const dispatch = useAppDispatch();
+
+  const route = useRoute<ModalScreenProps["route"]>();
   const theme = useTheme();
   const methods = useForm();
   const submitForm = methods.handleSubmit((data) => {
     console.log(data);
-    setVisible!(true);
+    ApiSocket?.emit(
+      "api:addRaspberryPi",
+      { ...data, userID: route.params.userID },
+      (cbRes: { status: number; msg: string }) => {
+        console.log(cbRes);
+        if (cbRes.status === 200) {
+          dispatch(setAlert(cbRes.msg, "success"));
+        } else if (cbRes.status === 100) {
+          dispatch(setAlert(cbRes.msg, "error"));
+        } else {
+          dispatch(setAlert(cbRes.msg, "info"));
+        }
+      }
+    );
   });
 
   return (
@@ -258,28 +275,29 @@ const AddModal = ({ setVisible }: { setVisible?: (arg: boolean) => void }) => {
       <FormProvider {...methods}>
         <Input
           rules={{ required: "Please fill out this field!" }}
-          name="rpiname"
+          name="piName"
           label="Raspberry Pi Name"
-          placeholder={Placeholder.rpiname}
-        />
-        <Input
-          rules={{ required: "Please fill out this field!" }}
-          name="username"
-          label="Your User Name"
-          placeholder={Placeholder.username}
+          placeholder={Placeholder.piName}
         />
         <Input
           rules={{
             required: "Please fill out this field!",
-            minLength: {
-              value: 8,
-              message: "Password length must be atleast 8 characters",
+            pattern: {
+              value: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+              message: "Invalid Email Address",
             },
           }}
-          name="password"
-          label="Your Password"
+          name="email"
+          label="Enter User Email"
+          placeholder={"Eg. abc@gmail.com"}
+        />
+        <Input
+          rules={{
+            required: "Please fill out this field!",
+          }}
+          name="apiKey"
+          label="Enter the API Key"
           isPasswordField={true}
-          placeholder={Placeholder.password}
         />
       </FormProvider>
       <Button

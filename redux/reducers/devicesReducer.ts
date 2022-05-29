@@ -20,6 +20,7 @@ const initialState: DevicesState = {
 export default (state = initialState, action: { type: string; payload: any }) =>
   produce(state, (draft) => {
     const { type, payload } = action;
+    let device;
     switch (type) {
       case DevicesScreensActions.selectPi:
         draft.piSelected = payload;
@@ -40,20 +41,29 @@ export default (state = initialState, action: { type: string; payload: any }) =>
       case DevicesScreensActions.loadDeviceTypes:
         draft.deviceTypes = payload;
         break;
+
+      case DevicesScreensActions.addDeviceStatus:
+        draft.deviceStatus?.push(payload);
+        break;
+
       case DevicesScreensActions.saveDeviceStatus:
         if (!draft.deviceStatus) {
-          draft.deviceStatus = [payload];
-        } else {
-          if (draft.deviceStatus.some((el) => el._id === payload._id)) break;
-          else draft.deviceStatus.push(payload);
+          draft.deviceStatus = payload;
         }
         break;
 
       case DevicesScreensActions.toggleDevice:
-        const device = draft.deviceStatus?.filter(
-          (el) => el._id === payload
-        )[0];
+        device = draft.deviceStatus?.filter((el) => el._id === payload)[0];
         if (device) device.status = !device.status;
+        break;
+
+      case DevicesScreensActions.setDeviceStatus:
+        device = draft.deviceStatus?.filter(
+          (el) => el._id === payload.deviceID
+        )[0];
+        if (device) device.status = payload.status;
+        break;
+
       default:
         break;
     }

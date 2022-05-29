@@ -22,19 +22,23 @@ export type DeviceListType = {
   status: boolean;
 };
 
+export type RaspiList = {
+  piID: string;
+  networkID: string;
+  piUsername: string;
+  piName: string;
+  netDetails: string;
+  deviceList: Array<DeviceListType>;
+  apiKey?: string;
+};
+
 export type State = {
-  raspiList: Array<{
-    piID: string;
-    networkID: string;
-    piUsername: string;
-    piName: string;
-    netDetails: string;
-    deviceList: Array<DeviceListType>;
-  }> | null;
+  raspiList: Array<RaspiList> | null;
   rpiSelected: { piID: string; piName: string } | null;
   connectedPis: Array<{
     piID: string;
     piName: string;
+    totalDevices: number;
   }> | null;
   setupLoading?: boolean;
 };
@@ -65,6 +69,7 @@ export default (state = initialState, action: { type: string; payload: any }) =>
         draft.connectedPis = draft.connectedPis?.filter(
           (el) => el.piID !== payload.piID
         )!;
+        break;
 
       case DevicesScreensActions.addDevice:
         draft.raspiList

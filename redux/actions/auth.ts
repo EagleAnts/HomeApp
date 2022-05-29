@@ -107,7 +107,6 @@ export const login = (formData: {}) => async (dispatch: Function) => {
     dispatch(loadUser());
   } catch (err: any) {
     dispatch(showLoadingIndicator(false));
-
     if (!err.response) {
       dispatch(setAlert("Can't Connect to Server Right Now", "info"));
     } else {
@@ -123,7 +122,10 @@ export const login = (formData: {}) => async (dispatch: Function) => {
 
 // Logout User
 
-export const logout = () => ({ type: actions.LOGOUT });
+export const logout = () => async (dispatch: Function) => {
+  dispatch({ type: actions.LOGOUT });
+  dispatch({ type: actions.RESET_APP });
+};
 
 // Update Profile
 

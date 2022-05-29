@@ -4,6 +4,7 @@ import { DevicesScreensActions } from "./actionTypes";
 export type piSelect = {
   piName: string;
   piID: string;
+  networkID: string;
 };
 export const selectRaspi = (rpiDetails: piSelect) => ({
   type: DevicesScreensActions.selectPi,
@@ -16,18 +17,24 @@ export type device_Type = Array<{
   icon: string;
   type: string;
 }>;
+
 export const loadDeviceTypes = (deviceTypes: device_Type) => ({
   type: DevicesScreensActions.loadDeviceTypes,
   payload: deviceTypes,
 });
 
-export const addDevice = (details: {
-  piID: string;
-  device: DeviceListType;
-}) => ({
-  type: DevicesScreensActions.addDevice,
-  payload: details,
-});
+export const addDevice =
+  (details: { piID: string; device: DeviceListType }) =>
+  (dispatch: Function) => {
+    dispatch({
+      type: DevicesScreensActions.addDevice,
+      payload: details,
+    });
+    dispatch({
+      type: DevicesScreensActions.addDeviceStatus,
+      payload: { _id: details.device._id, status: details.device.status },
+    });
+  };
 
 export const deleteDevice = ({
   piID,
@@ -42,14 +49,24 @@ export const deleteDevice = ({
   payload: { piID, deviceID, roomName },
 });
 
-export const saveDeviceStatus = (device: { _id: string; status: boolean }) => ({
+export const saveDeviceStatus = (
+  devicesArray: Array<{ _id: string; status: boolean }>
+) => ({
   type: DevicesScreensActions.saveDeviceStatus,
-  payload: device,
+  payload: devicesArray,
 });
 
 export const toggleStatus = (deviceID: string) => ({
   type: DevicesScreensActions.toggleDevice,
   payload: deviceID,
+});
+
+export const setStatus = (deviceStatus: {
+  deviceID: string;
+  status: boolean;
+}) => ({
+  type: DevicesScreensActions.setDeviceStatus,
+  payload: deviceStatus,
 });
 
 export const createRoomsView = (deviceList: {

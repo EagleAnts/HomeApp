@@ -17,12 +17,12 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 
 // Socket Handler
+import { ApiSocket, RaspiSocket } from "../utils/clientSocketProvider";
+
 import {
-  ApiSocket,
-  RaspiSocket,
   ClientSocketProvider,
   ClientSocketContext,
-} from "../utils/socketHandler";
+} from "../utils/clientSocketProvider";
 
 // Other Screens
 import DashboardScreen from "./Dashboard";
@@ -51,19 +51,30 @@ import {
   SplashScreen,
 } from "../components/Loading";
 import { device_Type, loadDeviceTypes } from "../redux/actions/devices";
+import {
+  connectPi,
+  getRaspberryPisAndDevices,
+} from "../redux/actions/dashboard";
+import { setAlert } from "../redux/actions/alert";
 
 export type RootHomeTabParamList = {
   Dashboard: { userName: string; email: string };
   Devices: undefined;
   PiDetails: undefined;
   Profile: { userName: string; email: string };
-  Settings: undefined;
+  Settings: { email: string };
 };
 
 export type HomeStackParamList = {
   RootHome: undefined;
   Splash: undefined;
-  Modal: { id: string; headerTitle: string; email: string; username: string };
+  Modal: {
+    id: string;
+    headerTitle: string;
+    email: string;
+    username: string;
+    userID: string;
+  };
 };
 export type RootHomeProps = NativeStackScreenProps<HomeStackParamList>;
 
@@ -82,7 +93,6 @@ export type ModalScreenProps = BottomTabScreenProps<
   HomeStackParamList,
   "Modal"
 >;
-const ENDPOINT = `http://${Constants.manifest?.extra?.serverUrl}:5000`;
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 const Tab = createBottomTabNavigator<RootHomeTabParamList>();
@@ -93,6 +103,45 @@ const RootHomeTab = ({ navigation, route }: RootHomeProps) => {
     return { token: state.auth.token, id: state.auth.user!.id };
   });
   const dispatch = useAppDispatch();
+
+  const raspiList = useAppSelector((state) => state.Dashboard.raspiList);
+  useEffect(() => {
+    if (!raspiList) {
+      console.log("Fetching User's RaspberryPis and their Devices ....");
+      dispatch(getRaspberryPisAndDevices(ApiSocket));
+    }
+
+    return () => {
+      console.log("Dashboard Cleanup");
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log("Current Raspi List : ", raspiList);
+    if (raspiList) {
+      raspiList.forEach((el) => {
+        console.log("Join Room Event ...");
+        RaspiSocket?.emit(
+          "raspberrypi:join_room",
+          { roomID: el.piID, piName: el.piName },
+          (cbRes: any) => {
+            console.log(cbRes);
+
+            if (cbRes.status === 200) {
+              dispatch(
+                connectPi({
+                  piID: el.piID,
+                  piName: el.piName,
+                  totalDevices: el.deviceList.length,
+                })
+              );
+              dispatch(setAlert(cbRes.msg, "success"));
+            } else dispatch(setAlert(cbRes.msg, "error"));
+          }
+        );
+      });
+    }
+  }, [raspiList]);
 
   useEffect(() => {
     ApiSocket?.emit("api:getDeviceTypes", null, (data: device_Type) => {
@@ -152,7 +201,11 @@ const RootHomeTab = ({ navigation, route }: RootHomeProps) => {
           component={ProfileScreen}
           // initialParams={{ userName: user?.name, email: user?.email }}
         />
-        <Tab.Screen name="Settings" component={SettingsScreen} />
+        <Tab.Screen
+          name="Settings"
+          component={SettingsScreen}
+          initialParams={{ email: user?.email }}
+        />
       </Tab.Navigator>
     </Portal.Host>
   );
@@ -160,6 +213,7 @@ const RootHomeTab = ({ navigation, route }: RootHomeProps) => {
 
 export const HomeScreen = () => {
   const theme = useTheme();
+  const user = useAppSelector((state: RootState) => state.auth.user);
 
   const { connected } = useContext(ClientSocketContext);
 
@@ -170,7 +224,6 @@ export const HomeScreen = () => {
           headerShown: false,
           contentStyle: { backgroundColor: theme.colors.background },
         }}
-        initialRouteName="RootHome"
       >
         {!connected ? (
           <Stack.Screen
@@ -196,6 +249,7 @@ export const HomeScreen = () => {
                 headerTitle: route.params.headerTitle,
                 animationTypeForReplace: "pop",
               })}
+              initialParams={{ userID: user?.id }}
             />
           </Stack.Group>
         )}

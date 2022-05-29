@@ -22,7 +22,7 @@ import Animated, {
 import { Input } from "../components/StyledInputs";
 import { ProfileScreenProps } from "./Home";
 import { MaterialIcons } from "@expo/vector-icons";
-import { ApiSocket } from "../utils/socketHandler";
+import { ApiSocket } from "../utils/clientSocketProvider";
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { setAlert } from "../redux/actions/alert";
 import { updateProfile } from "../redux/actions/auth";

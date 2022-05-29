@@ -32,14 +32,12 @@ export const unsubscribe = store.subscribe(() => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (!err.res) {
+    console.dir(err);
+    console.log("API Interceptor : ", err);
+    if (err.message.includes("Network Error") || err.response.status === 503) {
       console.log("Network Error");
       store.dispatch(networkError());
-    }
-
-    console.log("Api Interceptor", err);
-
-    if (err.response.status === 401) {
+    } else if (err.response.status === 401) {
       store.dispatch({ type: LOGOUT });
     }
     return Promise.reject(err);

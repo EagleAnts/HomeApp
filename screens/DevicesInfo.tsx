@@ -47,6 +47,7 @@ import Animated, {
   ZoomIn,
   ZoomOut,
 } from "react-native-reanimated";
+import { InfoText } from "../components/InfoText";
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import {
   deleteDevice,
@@ -56,7 +57,7 @@ import {
   toggleStatus,
 } from "../redux/actions/devices";
 import { DeviceListType } from "../redux/reducers/dashboardReducer";
-import { ApiSocket, RaspiSocket } from "../utils/socketHandler";
+import { ApiSocket, RaspiSocket } from "../utils/clientSocketProvider";
 import { DevicesInfoType, Props } from "./Devices";
 
 const { createAnimatedComponent } = Animated;
@@ -154,6 +155,10 @@ const DeviceView = ({
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  const piConnected = useAppSelector((state) =>
+    state.Dashboard.connectedPis?.some((el) => el.piID === piSelected.piID)
+  );
+
   const handleDelete = () => {
     console.log("Deleting this Device...");
     dispatch(
@@ -172,32 +177,25 @@ const DeviceView = ({
     );
     setShowDeleteDialog(false);
   };
-  const toggleDevice = () => {
-    RaspiSocket?.emit("raspberrypi:send", {
+  const toggleDeviceEvent = () => {
+    RaspiSocket?.emit("raspberrypi:sendPrivately", {
       event: "toggleDevice",
-      toRoom: piSelected.piID,
+      to: piSelected.piID,
+      networkID: piSelected.networkID,
+      deviceID: device._id,
+      gpio: device.gpio,
       count,
       content: {
-        type: `${device.name} ${deviceStatus?.status}`,
+        type: `${device.name}`,
         msg: `Hello From ${route.params.userName}`,
       },
       from: route.params.userName,
     });
     count++;
+
+    dispatch(toggleStatus(device._id));
   };
 
-  const toggleSwitch = (deviceID: string) => {
-    ApiSocket?.emit(
-      "api:toggleStatus",
-      { deviceID, status: !deviceStatus?.status },
-      (res: any) => {
-        console.log(res);
-      }
-    );
-    toggleDevice();
-
-    dispatch(toggleStatus(deviceID));
-  };
   const { height, width } = useWindowDimensions();
 
   const rStyle = useAnimatedStyle(() => {
@@ -290,58 +288,26 @@ const DeviceView = ({
             },
           ]}
         >
-          <View style={[styles.InfoStyles]}>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              Device Type :
-            </Subheading>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              {device.deviceType.type}
-            </Subheading>
-          </View>
-          <View style={[styles.InfoStyles]}>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              Device Description :
-            </Subheading>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              {device.deviceType.description}
-            </Subheading>
-          </View>
-          <View style={[styles.InfoStyles]}>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              Device GPIO :
-            </Subheading>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              {device.gpio}
-            </Subheading>
-          </View>
-          <View style={[styles.InfoStyles]}>
-            <Subheading
-              style={[styles.TextStyles, { color: theme.colors.text }]}
-            >
-              Device Status :
-            </Subheading>
+          <InfoText label="Device Type : " value={device.deviceType.type} />
+
+          <InfoText
+            label="Device Description : "
+            value={device.deviceType.description}
+          />
+
+          <InfoText label="Device GPIO : " value={device.gpio} />
+          <InfoText label="Device Status : ">
             <Switch
+              disabled={!piConnected}
               thumbColor={theme.colors.primary}
               trackColor={{
                 false: "#ccc",
                 true: theme.colors.primary,
               }}
               value={deviceStatus?.status}
-              onValueChange={() => toggleSwitch(device._id)}
+              onValueChange={() => toggleDeviceEvent()}
             />
-          </View>
+          </InfoText>
         </Surface>
       </ScrollView>
     </Animated.View>
@@ -359,15 +325,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 20,
   },
-  InfoStyles: {
-    marginVertical: 10,
-    width: "100%",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  TextStyles: {},
 });
 
 export default DevicesInfo;
+<Text style={{ textAlign: "right" }}>Hello</Text>;

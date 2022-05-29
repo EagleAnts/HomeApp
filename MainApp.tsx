@@ -9,7 +9,6 @@ import { AppHome } from "./screens/Home";
 
 // Components
 import {
-  Loader,
   LottieLoading,
   NetworkError,
   SplashScreen,
@@ -73,10 +72,10 @@ export const MainApp = () => {
     // };
     // bootstrapAsync();
     // handleBiometricAuth();
-    // .then(() => {
-    // });
+    // // .then(() => {
+    // // });
 
-    // Checking for Biometrics
+    // // Checking for Biometrics
     // if (authState.token) {
     //   getBiometricInfo().then((res) => {
     //     if (res)
@@ -86,7 +85,6 @@ export const MainApp = () => {
     //       });
     //   });
     // }
-
     return () => console.log("MainApp Cleanup");
   }, []);
 

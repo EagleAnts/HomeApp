@@ -56,7 +56,12 @@ export const PasswordInput = React.forwardRef((props: any, ref) => {
 
   return (
     <>
-      <TextInput ref={ref} secureTextEntry={passwordVisibility} {...props} />
+      <TextInput
+        autoCapitalize="none"
+        ref={ref}
+        secureTextEntry={passwordVisibility}
+        {...props}
+      />
       <Pressable
         style={{ width: "10%", alignSelf: "center" }}
         onPress={() => setPasswordVisibility(!passwordVisibility)}
@@ -247,6 +252,7 @@ export const Input: React.ForwardRefExoticComponent<InputType> =
                     ref={ref}
                     style={[inputTextStyle]}
                     value={value || ""}
+                    autoCapitalize="none"
                     onChangeText={onChange}
                     onBlur={onBlur}
                     placeholderTextColor="gray"

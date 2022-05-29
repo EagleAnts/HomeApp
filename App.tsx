@@ -12,7 +12,7 @@ import { Provider as PaperProvider } from "react-native-paper";
 import { DefaultTheme, DarkTheme, ThemeContext } from "./utils/customTheme";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { loadUser } from "./redux/actions/auth";
-import { RESTORE_TOKEN } from "./redux/actions/actionTypes";
+import { RESTORE_TOKEN, SET_LOADING } from "./redux/actions/actionTypes";
 import * as SecureStore from "expo-secure-store";
 const webApp = Platform.select({ web: true, default: false });
 

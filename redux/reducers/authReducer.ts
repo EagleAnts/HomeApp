@@ -9,6 +9,7 @@ import {
   RESTORE_TOKEN,
   NETWORK_ERROR,
   PROFILE_UPDATED,
+  SET_LOADING,
 } from "../actions/actionTypes";
 
 import { produce } from "immer";
@@ -29,7 +30,7 @@ type State = {
 const initialState: State = {
   token: null,
   isAuthenticated: null,
-  isLoading: true,
+  isLoading: false,
   isSignout: false,
   isServerError: false,
   user: null,
@@ -64,9 +65,11 @@ export default (state = initialState, action: any) =>
       case RESTORE_TOKEN:
         draft.token = payload.token;
         draft.isAuthenticated = !draft.token ? false : true;
-        draft.isLoading = draft.token ? true : false;
+        draft.isLoading = !draft.token ? false : true;
         break;
-
+      case SET_LOADING:
+        draft.isLoading = payload;
+        break;
       case NETWORK_ERROR:
         draft.isServerError = true;
         draft.isLoading = false;

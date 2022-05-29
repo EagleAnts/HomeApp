@@ -2,7 +2,11 @@
 export const SET_ALERT = "SET_ALERT";
 export const REMOVE_ALERT = "REMOVE_ALERT";
 
+// Reset App State
+export const RESET_APP = "RESET_APP";
+
 // For User Authentication
+export const SET_LOADING = "SET_LOADING";
 export const REGISTER_SUCCESS = "REGISTER_SUCCESS";
 export const REGISTER_FAIL = "REGISTER_FAIL";
 export const USER_LOADED = "USER_LOADED";
@@ -35,7 +39,9 @@ export const DevicesScreensActions = {
   selectPi: "devices:selectPi",
   loadDeviceTypes: "devices:loadDeviceTypes",
   addDevice: "devices:addDevice",
+  addDeviceStatus: "devices:addDeviceStatus",
   toggleDevice: "devices:toggleStatus",
+  setDeviceStatus: "device:setStatus",
   saveDeviceStatus: "devices:saveDeviceStatus",
   createRoomsView: "devices:createRoomsView",
   deleteDevice: "devices:deleteDevice",

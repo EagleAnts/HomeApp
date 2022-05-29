@@ -15,7 +15,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { Input } from "../components/StyledInputs";
 import { onSubmit } from "../utils/submitForm";
 
-import { DevTool } from "@hookform/devtools";
+// import { DevTool } from "@hookform/devtools";
 import { useAppDispatch, useAppSelector } from "../hooks/reduxHooks";
 import { RootState } from "../store";
 import Animated, {
@@ -34,7 +34,9 @@ const loginBg =
     : require("../assets/loginBgPhone.png");
 
 const LoginAndSignUpPage = () => {
-  console.log("Login Rendered");
+  useEffect(() => {
+    console.log("Login Rendered");
+  }, []);
 
   const { height, width } = useWindowDimensions();
   const dispatch = useAppDispatch();
@@ -212,7 +214,7 @@ const LoginAndSignUpPage = () => {
           </View>
         </Animated.View>
 
-        {webApp ? <DevTool control={methods.control} /> : null}
+        {/* {webApp ? <DevTool control={methods.control} /> : null} */}
         {/* </ImageBackground> */}
       </ScrollView>
     </>

@@ -22,6 +22,7 @@ import {
   RefreshControl,
 } from "react-native";
 import {
+  ActivityIndicator,
   Avatar,
   Card,
   FAB,
@@ -39,7 +40,15 @@ import { DashboardScreenProps } from "./Home";
 
 import { MaterialIcons } from "@expo/vector-icons";
 import Animated, {
+  BounceIn,
+  FadeIn,
   FadeInDown,
+  FadeOut,
+  JumpingTransition,
+  SequencedTransition,
+  SlideInDown,
+  SlideInUp,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -67,9 +76,18 @@ import { CredentialsPopUp } from "../components/CredentialsPopup";
 import { setAlert } from "../redux/actions/alert";
 import { useRoute } from "@react-navigation/native";
 import AnimatedPressable from "../components/AnimatedPressable";
-import { RaspiSocket, ApiSocket } from "../utils/socketHandler";
+import {
+  RaspiSocket,
+  ApiSocket,
+  ClientSocketContext,
+} from "../utils/clientSocketProvider";
 import { UserDevices } from "../components/UserDevices";
+import { WeatherGraph } from "../components/WeatherGraph/WeatherGraph";
+import { InfoText } from "../components/InfoText";
 // import CustomChart, { BarChart } from "../components/CustomChart";
+import { FontAwesome } from "@expo/vector-icons";
+import { SimpleLoading } from "../components/Loading";
+import { TemperatureDataProvider } from "../components/WeatherGraph/data";
 
 type ContextType = {
   translateX: number;
@@ -148,41 +166,43 @@ const FloatingAddButton = ({ navigation, route }: DashboardScreenProps) => {
   });
 
   return (
-    <View style={[styles.floatingButton]}>
-      {showOptions ? (
-        <Animated.View
-          entering={FadeInDown}
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 10,
-            marginVertical: 10,
+    <Animated.View
+      entering={FadeIn}
+      exiting={FadeOut}
+      style={[styles.floatingButton]}
+    >
+      <Animated.View
+        style={{
+          display: showOptions ? "flex" : "none",
+          justifyContent: "center",
+          alignItems: "center",
+          paddingHorizontal: 10,
+          marginVertical: 10,
+        }}
+      >
+        <CustomOption
+          label="Setup a new Raspberr Pi"
+          onPress={() => {
+            setshowOptions(false);
+            navigation.getParent()?.navigate("Modal", {
+              id: "Setup",
+              headerTitle: "Setup Raspberry Pi",
+              email: user?.email,
+            });
           }}
-        >
-          <CustomOption
-            label="Setup a new Raspberr Pi"
-            onPress={() => {
-              setshowOptions(false);
-              navigation.getParent()?.navigate("Modal", {
-                id: "Setup",
-                headerTitle: "Setup Raspberry Pi",
-                email: user?.email,
-              });
-            }}
-          />
-          <CustomOption
-            label="Add an existing Raspberry Pi"
-            onPress={() => {
-              setshowOptions(false);
-              navigation.getParent()?.navigate("Modal", {
-                id: "Add",
-                headerTitle: "Add Raspberry Pi",
-                email: user?.email,
-              });
-            }}
-          />
-        </Animated.View>
-      ) : null}
+        />
+        <CustomOption
+          label="Add an existing Raspberry Pi"
+          onPress={() => {
+            setshowOptions(false);
+            navigation.getParent()?.navigate("Modal", {
+              id: "Add",
+              headerTitle: "Add Raspberry Pi",
+              email: user?.email,
+            });
+          }}
+        />
+      </Animated.View>
       <Animated.View style={[addButtonStyles]}>
         <IconButton
           icon="plus"
@@ -197,7 +217,7 @@ const FloatingAddButton = ({ navigation, route }: DashboardScreenProps) => {
           }}
         />
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -209,19 +229,22 @@ const RpiList = () => {
 
   const [askCredentials, setaskCredentials] = useState(false);
 
-  const rpiList = useAppSelector((state) => state.Dashboard.raspiList);
+  const raspiList = useAppSelector((state) => state.Dashboard.raspiList);
+
   const rpiSelected = useAppSelector((state) => state.Dashboard.rpiSelected);
+
   const connectedPis = useAppSelector((state) => state.Dashboard.connectedPis);
+
   const piID =
-    rpiSelected && rpiList?.length !== 0
-      ? rpiList?.filter((el) => el.piName === rpiSelected.piName)[0].piID
+    rpiSelected && raspiList?.length !== 0
+      ? raspiList?.filter((el) => el.piName === rpiSelected.piName)[0].piID
       : null;
 
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (rpiList?.length === 0) dispatch(selectRaspi({ piID: "", piName: "" }));
-  }, [rpiList]);
+    if (raspiList?.length === 0) dispatch(selectRaspi(null));
+  }, [raspiList]);
 
   const onPress = useCallback(() => {
     const isActive = ref.current?.isActive();
@@ -280,31 +303,34 @@ const RpiList = () => {
           justifyContent: "center",
         }}
       >
-        <ScrollView
-          horizontal
-          style={{
-            width: "100%",
-          }}
-          contentContainerStyle={{
-            width: "100%",
-          }}
-        >
-          {rpiList?.slice(0, 4).map((el) => (
-            <InfoCard
-              key={el.piID}
-              title={el.piName}
-              handlePress={() => {
-                dispatch(selectRaspi({ piID: el.piID, piName: el.piName }));
-              }}
-              cardStyles={{ width: 150 }}
-              bgImg={true}
-              bgImgSource={{
-                uri: "https://res.cloudinary.com/homeautomation/image/upload/v1649065662/deviceIcons/rpiimage.png",
-              }}
-            />
-          ))}
-        </ScrollView>
-
+        {!raspiList ? (
+          <SimpleLoading />
+        ) : (
+          <ScrollView
+            horizontal
+            style={{
+              width: "100%",
+            }}
+            contentContainerStyle={{
+              width: "100%",
+            }}
+          >
+            {raspiList?.slice(0, 4).map((el) => (
+              <InfoCard
+                key={el.piID}
+                title={el.piName}
+                handlePress={() => {
+                  dispatch(selectRaspi({ piID: el.piID, piName: el.piName }));
+                }}
+                cardStyles={{ width: 150 }}
+                bgImg={true}
+                bgImgSource={{
+                  uri: "https://res.cloudinary.com/homeautomation/image/upload/v1649065662/deviceIcons/rpiimage.png",
+                }}
+              />
+            ))}
+          </ScrollView>
+        )}
         {/* <Text style={[, { color: theme.colors.text }]}>
           No Raspberry Pi is Selected
         </Text> */}
@@ -313,7 +339,7 @@ const RpiList = () => {
           ref={ref}
           children={
             <>
-              {rpiList?.length === 0 ? (
+              {raspiList?.length === 0 ? (
                 <View
                   style={{
                     flex: 1,
@@ -324,7 +350,7 @@ const RpiList = () => {
                   <Text>You Don't have any Raspberry Pi's registered yet!</Text>
                 </View>
               ) : (
-                rpiList?.map((el) => (
+                raspiList?.map((el) => (
                   <InfoCard
                     key={el.piName}
                     handlePress={() => {
@@ -362,18 +388,66 @@ const RpiDetails = ({
   piSelected: { piName: string; piID: string };
 }) => {
   const theme = useTheme();
-  return (
-    <Surface
+  const piDetails = useAppSelector(
+    (state) =>
+      state.Dashboard.connectedPis?.filter(
+        (el) => el.piID === piSelected.piID
+      )[0]
+  );
+
+  const opacity = useSharedValue(1);
+  const rStlyes = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+    };
+  });
+
+  useEffect(() => {
+    console.log("PiDetails : ", piDetails);
+    opacity.value = withSequence(withTiming(0), withTiming(1));
+  }, [piSelected]);
+
+  return !piDetails && !piSelected ? null : (
+    <Animated.View
       style={[
-        styles.rpiDetailsCard,
+        rStlyes,
         {
-          opacity: 0.8,
-          backgroundColor: theme.colors.background,
+          width: "90%",
+          alignItems: "center",
+          justifyContent: "center",
         },
       ]}
     >
-      <Text>Hello From {piSelected.piName}</Text>
-    </Surface>
+      <Surface
+        style={[
+          styles.rpiDetailsCard,
+          {
+            backgroundColor: theme.colors.background,
+          },
+        ]}
+      >
+        <InfoText
+          label="Current Status : "
+          value={
+            !piDetails ? (
+              <Text>
+                Offline <FontAwesome name="circle" color="red" />
+              </Text>
+            ) : (
+              <Text>
+                Online <FontAwesome name="circle" color="green" />
+              </Text>
+            )
+          }
+        />
+        <InfoText label="Uptime : " />
+        <InfoText
+          label="Total Registered Devices : "
+          value={piDetails?.totalDevices}
+        />
+        <InfoText label="Power Consumption : " />
+      </Surface>
+    </Animated.View>
   );
 };
 
@@ -381,29 +455,20 @@ const Dashboard = ({ navigation, route }: DashboardScreenProps) => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state: RootState) => state.auth.user);
   const { height, width } = useWindowDimensions();
+  const theme = useTheme();
 
-  const raspiList = useAppSelector((state) => state.Dashboard.raspiList);
   const rpiSelected = useAppSelector((state) => state.Dashboard.rpiSelected);
+
+  const [showFAB, setShowFAB] = useState(true);
+
+  // const scrollHandler = useAnimatedScrollHandler((event) => {
+  //   if(event)
+  // });
 
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-  }, []);
-
-  useEffect(() => {
-    console.log("Raspi Selected : ", rpiSelected);
-  }, [rpiSelected]);
-
-  useEffect(() => {
-    if (!raspiList) {
-      console.log("Fetching User's RaspberryPis and their Devices ....");
-      dispatch(getRaspberryPisAndDevices(ApiSocket));
-    }
-
-    return () => {
-      console.log("Dashboard Cleanup");
-    };
   }, []);
 
   useEffect(() => {
@@ -417,24 +482,34 @@ const Dashboard = ({ navigation, route }: DashboardScreenProps) => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
+        onScroll={({ nativeEvent }) => {
+          if (nativeEvent.contentOffset.y >= 50 && showFAB) {
+            setShowFAB(false);
+          } else if (nativeEvent.contentOffset.y < 50 && !showFAB) {
+            setShowFAB(true);
+          }
+        }}
         style={{ marginBottom: TABBAR_HEIGHT + 10 }}
         contentContainerStyle={[styles.containerStyles]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            colors={[theme.colors.primary]}
+            onRefresh={onRefresh}
+          />
         }
       >
         <WelcomMessage userName={user?.name!} />
         <RpiList />
-        {rpiSelected && user ? (
-          <RpiDetails piSelected={rpiSelected} />
-        ) : // <UserDevices
-        //   userDetails={{ userName: user.name, email: user.email }}
-        //   piSelected={rpiSelected}
-        // />
-        null}
+        {rpiSelected ? <RpiDetails piSelected={rpiSelected} /> : null}
+        <TemperatureDataProvider>
+          <WeatherGraph />
+        </TemperatureDataProvider>
       </ScrollView>
-      <FloatingAddButton navigation={navigation} route={route} />
+      {showFAB ? (
+        <FloatingAddButton navigation={navigation} route={route} />
+      ) : null}
     </View>
   );
 };
@@ -448,7 +523,7 @@ const styles = StyleSheet.create({
   floatingButton: {
     position: "absolute",
     bottom: TABBAR_HEIGHT + 20,
-    flex: 1,
+    width: "100%",
     alignItems: "center",
     alignSelf: "center",
   },
@@ -466,14 +541,16 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
   },
   rpiDetailsCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(122,122,122,0.5)",
     alignSelf: "center",
-    elevation: 4,
     borderRadius: 15,
-    width: "90%",
+    width: "100%",
     padding: 20,
     alignItems: "flex-start",
     justifyContent: "center",
     marginTop: 20,
+    marginBottom: 20,
   },
   weatherBackground: {
     ...StyleSheet.absoluteFillObject,

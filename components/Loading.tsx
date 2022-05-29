@@ -67,17 +67,22 @@ export const HomeSplashScreen = () => {
   );
 };
 
-export const Loader = () => {
+export const SimpleLoading = () => {
   const theme = useTheme();
   return (
-    <>
-      <View style={loadingStyle.container}>
-        <ActivityIndicator
-          style={{ height: "100%", width: "100%" }}
-          color={theme.colors.primary}
-        />
-      </View>
-    </>
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <ActivityIndicator
+        size={30}
+        style={{ height: "100%", width: "100%" }}
+        color={theme.colors.primary}
+      />
+    </View>
   );
 };
 

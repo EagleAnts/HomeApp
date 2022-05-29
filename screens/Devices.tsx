@@ -66,12 +66,13 @@ import {
 } from "../redux/actions/devices";
 import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getRaspberryPisAndDevices } from "../redux/actions/dashboard";
-import { ApiSocket } from "../utils/socketHandler";
+import { ApiSocket, RaspiSocket } from "../utils/clientSocketProvider";
 import { loadDeviceTypes } from "../redux/actions/devices";
 import { FormProvider, useController, useForm } from "react-hook-form";
 import { Input, InputType } from "../components/StyledInputs";
 import { DeviceListType } from "../redux/reducers/dashboardReducer";
 import { AppbarMenu } from "../components/AppBarMenu";
+import { CustomModal } from "../components/CustomModal";
 
 export type RootDeviceStackParamList = {
   MyDevices: undefined;
@@ -147,7 +148,13 @@ const BottomSheetView = ({ bottomSheetRef }: BottomSheetView) => {
             handlePress={() => {
               bottomSheetRef?.current?.scrollTo(0);
               // console.log(`Rasbperry Pi ${el.name} selected`);
-              dispatch(selectRaspi({ piName: el.piName, piID: el.piID }));
+              dispatch(
+                selectRaspi({
+                  piName: el.piName,
+                  piID: el.piID,
+                  networkID: el.networkID,
+                })
+              );
             }}
             title={el.piName}
             bgImg={true}
@@ -347,6 +354,8 @@ const RoomsView = () => {
 
   useEffect(() => {
     console.log("Rooms View");
+    console.log(piSelected);
+
     if (raspiList && piSelected) {
       let roomsList: {
         [area: string]: Array<DeviceListType>;
@@ -370,22 +379,9 @@ const RoomsView = () => {
 
   return (
     <>
-      <Portal>
-        <Modal
-          visible={visible}
-          onDismiss={handleModalDismiss}
-          contentContainerStyle={[
-            styles.ModalContainer,
-            {
-              backgroundColor: theme.colors.background,
-              height: 0.7 * height,
-            },
-          ]}
-          style={{ marginBottom: 60 }}
-        >
-          <AddDevice visible={visible} setVisible={setVisible} />
-        </Modal>
-      </Portal>
+      <CustomModal visible={visible} handleModalDismiss={handleModalDismiss}>
+        <AddDevice visible={visible} setVisible={setVisible} />
+      </CustomModal>
 
       <View style={{ width: "100%", margin: 10 }}>
         <Button
@@ -582,10 +578,6 @@ const Devices = ({ navigation: tabNavigation }: BottomTabBarProps) => {
   const { height, width } = useWindowDimensions();
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    console.log("Devices Rendered..");
-  }, []);
-
   return (
     <BottomSheetContext.Provider value={{ bottomSheetRef }}>
       {/* <AnimatedPressable
@@ -615,6 +607,7 @@ const Devices = ({ navigation: tabNavigation }: BottomTabBarProps) => {
             headerShown: true,
             headerTitle: "Devices",
             header: () => <DevicesHeader />,
+            animation: "fade",
           }}
         />
         <Stack.Screen
@@ -664,16 +657,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexWrap: "wrap",
-  },
-
-  ModalContainer: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(105,105,105,1)",
-    padding: 10,
-    width: "90%",
-    alignSelf: "center",
   },
 });
 
